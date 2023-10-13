@@ -12,6 +12,7 @@
   "dependencies": {
     "@_sh/strapi-plugin-ckeditor": "^2.0.4",
     "@strapi/plugin-i18n": "4.14.3",
+    "@strapi/plugin-seo": "^1.9.5",
     "@strapi/plugin-users-permissions": "4.14.3",
     "@strapi/provider-email-nodemailer": "^4.14.3",
     "@strapi/provider-upload-cloudinary": "^4.14.4",
