@@ -35,5 +35,5 @@ copy-ssh-pub:
 	pbcopy < ${SSH_KEY_PUBLIC}
 
 copy-ssh-private:
-	pbcopy < ${${SSH_KEY_PRIVATE}}
+	pbcopy < ${SSH_KEY_PRIVATE}
 
