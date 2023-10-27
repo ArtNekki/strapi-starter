@@ -2,7 +2,7 @@ version: '3'
 services:
   strapi:
     build: .
-    image: mayatskiy/strapi-starter:dev
+    image: ${DOCKER_USERNAME}/${PROJECT_NAME}:dev
     restart: unless-stopped
     env_file: .env
     environment:

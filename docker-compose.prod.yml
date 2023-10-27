@@ -1,7 +1,7 @@
 version: '3'
 services:
   strapi:
-    image: mayatskiy/strapi-starter:0.0.1
+    image: ${DOCKER_USERNAME}/${PROJECT_NAME}:${PROJECT_VERSION}
     restart: always
     env_file: .env
     environment:
