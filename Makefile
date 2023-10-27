@@ -5,7 +5,8 @@ export SERVER_IP \
        DOCKER_USERNAME \
        PROJECT_NAME \
        PROJECT_VERSION \
-       SSH_KEY_PATH
+       SSH_KEY_PRIVATE \
+       SSH_KEY_PUBLIC
 
 dev:
 	docker-compose -f docker-compose.yml up
@@ -25,14 +26,14 @@ prod:
 
 
 copy-to-vps:
-	scp -i ${SSH_KEY_PATH} .env root@${SERVER_IP}:/root/${PROJECT_NAME}
+	scp -i ${SSH_KEY_PRIVATE} .env root@${SERVER_IP}:/root/${PROJECT_NAME}
 
 connect-to-vps:
-	ssh -i ${SSH_KEY_PATH} root@${SERVER_IP}
+	ssh -i ${SSH_KEY_PRIVATE} root@${SERVER_IP}
 
-copy-id-pub:
-	pbcopy < ~/.ssh/id_rsa_taiga.pub
+copy-ssh-pub:
+	pbcopy < ${SSH_KEY_PUBLIC}
 
-copy-id-private:
-	pbcopy < ~/.ssh/id_rsa_taiga
+copy-ssh-private:
+	pbcopy < ${${SSH_KEY_PRIVATE}}
 
