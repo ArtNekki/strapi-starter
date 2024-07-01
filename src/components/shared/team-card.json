@@ -1,0 +1,27 @@
+{
+  "collectionName": "components_shared_team_cards",
+  "info": {
+    "displayName": "teamCard",
+    "icon": "smile",
+    "description": ""
+  },
+  "options": {},
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "string",
+      "required": true
+    },
+    "image": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": [
+        "images"
+      ]
+    }
+  }
+}
