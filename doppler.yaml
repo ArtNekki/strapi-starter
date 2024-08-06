@@ -1,0 +1,3 @@
+setup:
+  project: strapi-starter
+  config: dev

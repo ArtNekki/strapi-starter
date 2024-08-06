@@ -1,0 +1,73 @@
+services:
+  strapi:
+    image: ${DOCKER_USERNAME:-docker}/${PROJECT_NAME:-strapi-starter}:${PROJECT_VERSION:-latest}
+    restart: always
+    env_file: .env
+    environment:
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      API_TOKEN_SALT: ${API_TOKEN_SALT}
+      APP_KEYS: ${APP_KEYS}
+      CLOUDINARY_NAME: ${CLOUDINARY_NAME}
+      CLOUDINARY_KEY: ${CLOUDINARY_KEY}
+      CLOUDINARY_SECRET: ${CLOUDINARY_SECRET}
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DATABASE_HOST: strapiDB
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_SSL: ${DATABASE_SSL}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+      EMAIL_ADDRESS_FROM: ${EMAIL_ADDRESS_FROM}
+      EMAIL_ADDRESS_REPLY: ${EMAIL_ADDRESS_REPLY}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      STRAPI_URL: ${STRAPI_URL}
+      TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT}
+
+      DOCKER_USERNAME: ${DOCKER_USERNAME}
+      PROJECT_NAME: ${PROJECT_NAME}
+      PROJECT_VERSION: ${PROJECT_VERSION}
+      NODE_ENV: ${NODE_ENV:-production}
+    volumes:
+      - ./.env:/opt/app/.env
+      - strapi-public:/opt/app/public
+    ports:
+      - '1337:1337'
+    command: ["npm", "run", "start"]
+    depends_on:
+      strapiDB:
+        condition: service_healthy
+    networks:
+      - strapi-network
+
+  strapiDB:
+    image: postgres:14.5-alpine
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - strapi-db:/var/lib/postgresql/data/
+    networks:
+      - strapi-network
+
+volumes:
+  strapi-db:
+    name: strapi-db-${NODE_ENV}
+  strapi-public:
+    name: strapi-public-${NODE_ENV}
+
+networks:
+  strapi-network:
+    driver: bridge
