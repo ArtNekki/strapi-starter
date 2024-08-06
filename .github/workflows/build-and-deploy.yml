@@ -1,0 +1,215 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - develop
+
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/${{ vars.PROJECT_NAME }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get the version
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "NODE_ENV=production" >> $GITHUB_ENV
+          else
+            echo "VERSION=$(git describe --tags --always)-dev-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+            echo "NODE_ENV=staging" >> $GITHUB_ENV
+          fi
+
+#      - name: Install git-crypt
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y git-crypt
+#
+#      - name: Decrypt env files
+#        run: |
+#          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > git-crypt-key
+#          git-crypt unlock git-crypt-key
+#          rm git-crypt-key
+
+      - name: Validate docker-compose files
+        run: |
+          docker-compose -f docker-compose.yml config
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ steps.get_version.outputs.VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.DOCKER_IMAGE }}:${{ steps.get_version.outputs.VERSION }}
+          build-args: |
+            NODE_ENV=${{ env.NODE_ENV }}
+            STRAPI_URL=${{ secrets.STRAPI_URL }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  deploy:
+    needs: build-and-push
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/develop' && 'staging' || 'production' }}
+    env:
+      PROJECT_VERSION: ${{ needs.build-and-push.outputs.version }}
+      NODE_ENV: ${{ github.ref == 'refs/heads/develop' && 'staging' || 'production' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+#      - name: Install git-crypt
+#        run: |
+#          sudo apt-get update
+#          sudo apt-get install -y git-crypt
+#
+#      - name: Decrypt env files
+#        run: |
+#          echo "${{ secrets.GIT_CRYPT_KEY }}" | base64 -d > git-crypt-key
+#          git-crypt unlock git-crypt-key
+#          rm git-crypt-key
+
+      - name: Copy docker-compose files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.yml,.env"
+          target: "~/opt/app"
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        env:
+          ADMIN_JWT_SECRET: ${{ secrets.ADMIN_JWT_SECRET }}
+          API_TOKEN_SALT: ${{ secrets.API_TOKEN_SALT }}
+          APP_KEYS: ${{ secrets.APP_KEYS }}
+          CLOUDINARY_NAME: ${{ secrets.CLOUDINARY_NAME }}
+          CLOUDINARY_KEY: ${{ secrets.CLOUDINARY_KEY }}
+          CLOUDINARY_SECRET: ${{ secrets.CLOUDINARY_SECRET }}
+          DATABASE_CLIENT: ${{ secrets.DATABASE_CLIENT }}
+          DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
+          DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+          DATABASE_SSL: ${{ secrets.DATABASE_SSL }}
+          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+          EMAIL_ADDRESS_FROM: ${{ secrets.EMAIL_ADDRESS_FROM }}
+          EMAIL_ADDRESS_REPLY: ${{ secrets.EMAIL_ADDRESS_REPLY }}
+          EMAIL_PROVIDER: ${{ secrets.EMAIL_PROVIDER }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          STRAPI_URL: ${{ secrets.STRAPI_URL }}
+          TRANSFER_TOKEN_SALT: ${{ secrets.TRANSFER_TOKEN_SALT }}
+
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+          PROJECT_VERSION: ${{ needs.build-and-push.outputs.version }}
+          NODE_ENV: ${{ env.NODE_ENV }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs:
+            ADMIN_JWT_SECRET,
+            API_TOKEN_SALT,
+            APP_KEYS,
+            CLOUDINARY_NAME,
+            CLOUDINARY_KEY,
+            CLOUDINARY_SECRET,
+            DATABASE_CLIENT,
+            DATABASE_HOST,
+            DATABASE_NAME,
+            DATABASE_PASSWORD,
+            DATABASE_PORT,
+            DATABASE_SSL,
+            DATABASE_USERNAME,
+            EMAIL_ADDRESS_FROM,
+            EMAIL_ADDRESS_REPLY,
+            EMAIL_PROVIDER,
+            JWT_SECRET,
+            SMTP_HOST,
+            SMTP_PASSWORD,
+            SMTP_PORT,
+            SMTP_USERNAME,
+            STRAPI_URL,
+            TRANSFER_TOKEN_SALT,
+
+            DOCKER_USERNAME,
+            PROJECT_NAME,
+            PROJECT_VERSION,
+            NODE_ENV,
+          script: |
+            set -e
+
+            cd ~/opt/app
+
+            # Pull the new image
+            docker-compose -f docker-compose.yml pull
+
+            # run project
+            docker-compose -f docker-compose.yml up -d
+
+            # Perform rolling update
+            # docker-compose -f docker-compose.yml up -d --no-deps --scale strapi=2 --no-recreate strapiDB
+            # docker-compose -f docker-compose.yml up -d --no-deps --scale strapi=1 --no-recreate strapiDB
+
+            # Remove old Docker images
+            docker image prune -af
+
+            # Check if the application is healthy
+            echo "Checking application health..."
+            MAX_RETRIES=5
+            RETRY_INTERVAL=10
+            for i in $(seq 1 $MAX_RETRIES); do
+              if curl -f http://localhost:1337/admin/login; then
+                echo "Application is healthy!"
+                exit 0
+              fi
+              echo "Attempt $i failed. Retrying in $RETRY_INTERVAL seconds..."
+              sleep $RETRY_INTERVAL
+            done
+            echo "Application health check failed after $MAX_RETRIES attempts."
+            exit 1

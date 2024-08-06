@@ -1,0 +1,61 @@
+name: Upload Backup to S3
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Choose the environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2.7.0
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOSTS }}
+
+      - name: Check and copy file from remote server
+        run: |
+          if ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "[ -f backup_file.tar.gz ]"; then
+            scp ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:backup_file.tar.gz ./backup_file.tar.gz
+            echo "File successfully copied"
+          else
+            echo "Error: backup_file.tar.gz not found on remote server"
+            exit 1
+          fi
+
+      - name: Install s3cmd
+        run: sudo apt-get install s3cmd
+
+      - name: Configure s3cmd
+        run: |
+          echo "[default]
+          access_key = ${{ secrets.AWS_ACCESS_KEY_ID }}
+          secret_key = ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          host_base = ${{ vars.S3_URL }}
+          host_bucket = ${{ vars.S3_URL }}
+          use_https = True
+          signature_v2 = False" > ~/.s3cfg
+
+      - name: Upload file to S3
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          s3cmd put ./backup_file.tar.gz s3://${{ secrets.S3_BUCKET_NAME }}/backup_file_${{ github.event.inputs.environment }}_${TIMESTAMP}.tar.gz
+
+      - name: Delete file from remote server
+        if: success()
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "rm backup_file.tar.gz"
