@@ -1,12 +1,26 @@
 {
   "name": "strapi-starter",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "A Strapi application",
-  "license": "MIT",
-  "author": {
-    "name": "A Strapi developer"
+  "description": "A Strapi-based starter project with multi-environment support (local, Docker, production, and test).",
+  "keywords": [
+    "strapi",
+    "starter",
+    "docker",
+    "doppler",
+    "SQL lite",
+    "PostgreSQL"
+  ],
+  "homepage": "https://strapi-starter.ru",
+  "bugs": {
+    "url": "https://github.com/ArtNekki/strapi-starter.git/issues"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ArtNekki/strapi-starter.git"
+  },
+  "license": "MIT",
+  "author": "Anton Mayatskiy <work.mayatskiy@gmail.com>",
   "scripts": {
     "build": "strapi build",
     "deploy": "strapi deploy",
