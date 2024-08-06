@@ -1,36 +1,52 @@
 {
   "name": "strapi-starter",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "description": "A Strapi application",
-  "scripts": {
-    "develop": "strapi develop",
-    "start": "strapi start",
-    "build": "strapi build",
-    "strapi": "strapi",
-    "deploy": "strapi deploy"
+  "license": "MIT",
+  "author": {
+    "name": "A Strapi developer"
   },
-  "devDependencies": {},
+  "scripts": {
+    "build": "strapi build",
+    "deploy": "strapi deploy",
+    "develop": "strapi develop",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "prepare": "husky",
+    "start": "strapi start",
+    "strapi": "strapi",
+    "test": "jest --forceExit --detectOpenHandles"
+  },
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
   "dependencies": {
-    "@strapi/strapi": "4.25.6",
-    "@strapi/plugin-users-permissions": "4.25.6",
-    "@strapi/plugin-i18n": "4.25.6",
     "@strapi/plugin-cloud": "4.25.6",
+    "@strapi/plugin-i18n": "4.25.6",
+    "@strapi/plugin-users-permissions": "4.25.6",
+    "@strapi/strapi": "4.25.6",
     "better-sqlite3": "8.6.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "5.3.4",
     "styled-components": "5.3.3"
   },
-  "author": {
-    "name": "A Strapi developer"
-  },
-  "strapi": {
-    "uuid": "082c337e-5c88-4dd9-819c-03c07a1957c9"
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.8"
   },
   "engines": {
     "node": ">=18.0.0 <=20.x.x",
     "npm": ">=6.0.0"
   },
-  "license": "MIT"
+  "strapi": {
+    "uuid": "082c337e-5c88-4dd9-819c-03c07a1957c9"
+  }
 }
