@@ -105,7 +105,7 @@ export PROJECT_VERSION
 doppler configure set config $CONFIG_NAME
 
 # Load Doppler Secrets
-export eval $(doppler secrets download --no-file --format docker  --config "$CONFIG_NAME")
+export eval $(doppler secrets download --no-file --format docker)
 
 # Run the application based on the environment
 if [ "$ENV" = "local" ]; then

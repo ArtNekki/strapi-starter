@@ -37,5 +37,5 @@ log() {
     ;;
   esac
 
-  echo -e "${color}${icon} [$(date +'%Y-%m-%d %H:%M:%S')] [$log_type] $message${NC}" | tee -a deploy.log
+  echo -e "${color}${icon} [$(date +'%Y-%m-%d %H:%M:%S')] [$log_type] $message${NC}" | tee -a data.log
 }
